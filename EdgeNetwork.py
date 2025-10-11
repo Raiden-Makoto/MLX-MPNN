@@ -1,6 +1,6 @@
-import mlx.core as mx
-import mlx.nn as nn
-from mlx_graphs.nn.message_passing import MessagePassing
+import mlx.core as mx # type: ignore
+import mlx.nn as nn # type: ignore
+from mlx_graphs.nn.message_passing import MessagePassing # type: ignore
 
 class EdgeNetwork(MessagePassing):
     def __init__(self, edge_dim, message_dim):
