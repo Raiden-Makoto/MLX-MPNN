@@ -18,7 +18,7 @@ This project implements a Graph Neural Network (GNN) using Message Passing Neura
 
 ### Requirements
 - Python 3.11+
-- Apple Silicon Mac (M1/M2/M3)
+- Apple Silicon Mac 
 
 ### Setup
 
