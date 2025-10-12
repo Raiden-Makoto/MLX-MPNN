@@ -38,10 +38,24 @@ class MPNNMLX(nn.Module):
         return h_new
 
     def __call__(self, data):
-        x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
+        x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
+        
+        # Get or create batch indices (workaround for mlx_graphs bug)
+        if hasattr(data, 'batch_indices') and data.batch_indices is not None:
+            batch_indices = data.batch_indices
+            # Fix mlx_graphs bug where batch_indices can be multiple elements short
+            if batch_indices.shape[0] < x.shape[0]:
+                missing_count = x.shape[0] - batch_indices.shape[0]
+                last_idx = batch_indices[-1]
+                padding = mx.full((missing_count,), last_idx, dtype=batch_indices.dtype)
+                batch_indices = mx.concatenate([batch_indices, padding])
+        else:
+            # Single graph case - all nodes belong to graph 0
+            batch_indices = mx.zeros(x.shape[0], dtype=mx.int32)
+        
         h = self.nodelin(x)
         for _ in range(self.numsteps):
             m = self.edgenet(h, edge_index, edge_attr)
             h = self.gru_cell(m, h)
-        hg = global_mean_pool(h, batch)
+        hg = global_mean_pool(h, batch_indices)
         return mx.sigmoid(mx.squeeze(self.readout(hg), -1))
