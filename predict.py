@@ -5,6 +5,7 @@ import mlx.core as mx
 from mlx.utils import tree_unflatten
 from mlx_mpnn import MPNNMLX
 from utils import Smi2GraphMLX
+import pandas as pd
 
 def load_model(model_path='checkpoints/best_model.npz'):
     """Load a trained model from disk"""
@@ -43,20 +44,43 @@ if __name__ == "__main__":
     model = load_model()
     print("✓ Model loaded!\n")
     
-    # Example molecules
-    test_molecules = [
-        ("Ibuprofen", "CC(C)Cc1ccc(cc1)C(C)C(O)=O"),
-        ("Caffeine", "CN1C=NC2=C1C(=O)N(C(=O)N2C)C"),
-        ("Aspirin", "CC(=O)Oc1ccccc1C(=O)O"),
-        ("Dopamine", "NCCc1ccc(O)c(O)c1"),
-    ]
+    # Load QM9 molecules
+    print("Loading QM9 molecules...")
+    df = pd.read_csv("QM9.csv", usecols=["smiles"]).sample(6767)
+    print(f"Processing {len(df)} molecules...\n")
     
-    print("Testing predictions:")
-    print("-" * 60)
-    for name, smiles in test_molecules:
+    # Predict BBBP for each molecule
+    predictions = []
+    for idx, smiles in enumerate(df['smiles']):
         pred = predict_bbbp(model, smiles)
-        if pred is not None:
-            result = "Permeable" if pred > 0.5 else "Non-permeable"
-            print(f"{name:15s} | Score: {pred:.4f} | {result}")
+        predictions.append(pred if pred is not None else 0.0)
+        
+        # Progress indicator
+        if (idx + 1) % 500 == 0:
+            print(f"Processed {idx + 1}/{len(df)} molecules...")
+    
+    df['p_np'] = predictions
+    df['prediction'] = df['p_np'].apply(lambda x: "Permeable" if x > 0.5 else "Non-permeable")
+    
+    # Summary statistics
+    print("\n" + "=" * 60)
+    print("Prediction Summary:")
+    print("=" * 60)
+    print(f"Total molecules: {len(df)}")
+    print(f"Permeable: {(df['p_np'] > 0.5).sum()} ({(df['p_np'] > 0.5).sum() / len(df) * 100:.1f}%)")
+    print(f"Non-permeable: {(df['p_np'] <= 0.5).sum()} ({(df['p_np'] <= 0.5).sum() / len(df) * 100:.1f}%)")
+    print(f"Mean score: {df['p_np'].mean():.4f}")
+    print("=" * 60)
+    
+    # Show first few predictions
+    print("\nFirst 10 predictions:")
     print("-" * 60)
+    for idx, row in df.head(10).iterrows():
+        print(f"{row['smiles'][:40]:40s} | Score: {row['p_np']:.4f} | {row['prediction']}")
+    print("-" * 60)
+    
+    # Save results
+    output_file = "qm9_mlx.csv"
+    df.to_csv(output_file, index=False)
+    print(f"\n✓ Results saved to {output_file}")
 
