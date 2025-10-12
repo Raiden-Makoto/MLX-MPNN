@@ -47,7 +47,7 @@ os.makedirs(checkpoint_dir, exist_ok=True)
 print(f"Checkpoints will be saved to: {checkpoint_dir}/")
 
 # Hyperparameters
-num_epochs = 100
+num_epochs = 40
 initial_lr = 5e-4
 min_lr = 1e-6
 patience = 15
