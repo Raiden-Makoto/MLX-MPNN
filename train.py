@@ -58,8 +58,8 @@ for epoch in range(1, num_epochs + 1):
     for batch in tqdm(train_loader, desc=f"Epoch {epoch} [train]"):
         loss, grads = loss_and_grad(batch)
         train_loss += loss.item()
-        # Apply gradients to update parameters
-        optimizer.apply_gradients(grads, model.parameters())
+        # Apply gradients and update model parameters
+        model.update(optimizer.apply_gradients(grads, model.parameters()))
         mx.eval(model.parameters())
     avg_train_loss = train_loss / len(train_loader)
 
@@ -71,8 +71,8 @@ for epoch in range(1, num_epochs + 1):
         preds = model(batch)
         val_loss   += nn.losses.mse_loss(preds, batch.y).item()
         val_metric += metric_fn(preds, batch.y).item()
-    avg_val_loss   = val_loss   / len(val_loader)
-    avg_val_metric = val_metric / len(val_loader)
+    avg_val_loss   = val_loss   / len(val_graphs)
+    avg_val_metric = val_metric / len(val_graphs)
 
     print(
         f"Epoch {epoch:02d}  "
